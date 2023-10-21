@@ -73,6 +73,7 @@ def main():
     global h
     json_config = json.loads(data)
     h = AttrDict(json_config)
+    print(h)
 
     torch.manual_seed(h.seed)
     global device

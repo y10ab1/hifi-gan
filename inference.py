@@ -9,6 +9,7 @@ from scipy.io.wavfile import write
 from env import AttrDict
 from meldataset import mel_spectrogram, MAX_WAV_VALUE, load_wav
 from models import Generator
+from torchaudio.transforms import MelSpectrogram
 
 h = None
 device = None
@@ -23,7 +24,10 @@ def load_checkpoint(filepath, device):
 
 
 def get_mel(x):
-    return mel_spectrogram(x, h.n_fft, h.num_mels, h.sampling_rate, h.hop_size, h.win_size, h.fmin, h.fmax)
+    # return mel_spectrogram(x, h.n_fft, h.num_mels, h.sampling_rate, h.hop_size, h.win_size, h.fmin, h.fmax)
+    f = MelSpectrogram(sample_rate=h.sampling_rate, n_fft=h.n_fft, win_length=h.win_size, hop_length=h.hop_size,
+                       n_mels=h.num_mels, f_min=h.fmin, f_max=h.fmax).to(device)
+    return f(x)
 
 
 def scan_checkpoint(cp_dir, prefix):
@@ -72,6 +76,7 @@ def main():
     a = parser.parse_args()
 
     config_file = os.path.join(os.path.split(a.checkpoint_file)[0], 'config.json')
+    assert os.path.isfile(config_file), "No config file found at {}".format(config_file)
     with open(config_file) as f:
         data = f.read()
 
@@ -86,7 +91,6 @@ def main():
         device = torch.device('cuda')
     else:
         device = torch.device('cpu')
-
     inference(a)
 
 

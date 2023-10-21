@@ -1,1 +1,1 @@
-python inference.py --checkpoint_file /home/yuehpo/coding/DeepMIR_2023fall/hw2/model/UNIVERSAL_V1/config.json
+python inference.py --checkpoint_file /home/yuehpo/coding/hifi-gan/model/LJ_FT_T2_V3/generator_v3
