@@ -9,7 +9,12 @@ from scipy.io.wavfile import write
 from env import AttrDict
 from meldataset import mel_spectrogram, MAX_WAV_VALUE, load_wav
 from models import Generator
-from torchaudio.transforms import MelSpectrogram
+from torchaudio.transforms import MelSpectrogram, Resample
+from glob import glob
+import librosa
+
+from meldataset_hw2 import mel_spectrogram as mel_spectrogram_hw2
+
 
 h = None
 device = None
@@ -24,10 +29,13 @@ def load_checkpoint(filepath, device):
 
 
 def get_mel(x):
-    # return mel_spectrogram(x, h.n_fft, h.num_mels, h.sampling_rate, h.hop_size, h.win_size, h.fmin, h.fmax)
-    f = MelSpectrogram(sample_rate=h.sampling_rate, n_fft=h.n_fft, win_length=h.win_size, hop_length=h.hop_size,
-                       n_mels=h.num_mels, f_min=h.fmin, f_max=h.fmax).to(device)
-    return f(x)
+    return mel_spectrogram(x, h.n_fft, h.num_mels, h.sampling_rate, h.hop_size, h.win_size, h.fmin, h.fmax)
+    # f = MelSpectrogram(sample_rate=h.sampling_rate, n_fft=h.n_fft, win_length=h.win_size, hop_length=h.hop_size,
+    #                    n_mels=h.num_mels, f_min=h.fmin, f_max=h.fmax).to(device)
+    # return f(x)
+    
+def get_mel_hw2(x):
+    return mel_spectrogram_hw2(x, h.n_fft, h.num_mels, h.sampling_rate, h.hop_size, h.win_size, h.fmin, h.fmax)
 
 
 def scan_checkpoint(cp_dir, prefix):
@@ -44,7 +52,8 @@ def inference(a):
     state_dict_g = load_checkpoint(a.checkpoint_file, device)
     generator.load_state_dict(state_dict_g['generator'])
 
-    filelist = os.listdir(a.input_wavs_dir)
+    # filelist = os.listdir(a.input_wavs_dir)
+    filelist = [filename.split('/')[-1] for filename in glob(os.path.join(a.input_wavs_dir, '*.wav'))]
 
     os.makedirs(a.output_dir, exist_ok=True)
 
@@ -55,13 +64,16 @@ def inference(a):
             wav, sr = load_wav(os.path.join(a.input_wavs_dir, filname))
             wav = wav / MAX_WAV_VALUE
             wav = torch.FloatTensor(wav).to(device)
-            x = get_mel(wav.unsqueeze(0))
+            # resample if needed
+            if sr != h.sampling_rate:
+                wav = Resample(sr, h.sampling_rate).to(device)(wav)
+            x = get_mel(wav.unsqueeze(0)) if 'hifi-gan-from_scratch' not in a.output_dir else get_mel_hw2(wav.unsqueeze(0))
             y_g_hat = generator(x)
             audio = y_g_hat.squeeze()
             audio = audio * MAX_WAV_VALUE
             audio = audio.cpu().numpy().astype('int16')
 
-            output_file = os.path.join(a.output_dir, os.path.splitext(filname)[0] + '_generated.wav')
+            output_file = os.path.join(a.output_dir, os.path.splitext(filname)[0] + '.wav')
             write(output_file, h.sampling_rate, audio)
             print(output_file)
 

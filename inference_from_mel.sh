@@ -1,1 +1,1 @@
-python inference_e2e.py --checkpoint_file /home/yuehpo/coding/hifi-gan/model/UNIVERSAL_V1/g_02500000
+python inference_e2e.py --checkpoint_file /home/yuehpo/coding/hifi-gan/cp_hifigan/g_02510000

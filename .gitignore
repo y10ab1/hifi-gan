@@ -16,6 +16,7 @@ hifi-gan/
 LJSpeech-1.1/
 generated*
 test*
+cp_hifigan/
 # C extensions
 *.so
 
